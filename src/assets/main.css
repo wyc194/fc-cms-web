@@ -1,0 +1,192 @@
+
+@import './global.css';
+
+:root {
+  /* --el-color-primary: #4f46e5;
+  --el-color-primary-light-3: #818cf8;
+  --el-color-primary-light-5: #a5b4fc;
+  --el-color-primary-light-7: #c7d2fe;
+  --el-color-primary-light-8: #e0e7ff;
+  --el-color-primary-light-9: #eef2ff;
+  --el-color-primary-dark-2: #4338ca; */
+  
+  --el-border-radius-base: 8px;
+  --el-border-radius-small: 4px;
+  --el-border-radius-round: 20px;
+  
+  --el-box-shadow-light: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --el-box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+}
+
+/* Global Styles */
+body {
+  margin: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #f1f5f9;
+  color: #1e293b;
+}
+
+/* Scrollbar Refinement */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Card Enhancements */
+.el-card {
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.el-card:hover {
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1) !important;
+}
+
+.el-card__header {
+  border-bottom: 1px solid #e2e8f0 !important;
+  padding: 16px 20px !important;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+/* Button Refinement */
+.el-button {
+  font-weight: 500;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.el-button--primary {
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+}
+
+/* Form Refinement */
+.el-input__wrapper, .el-select__wrapper, .el-textarea__inner {
+  box-shadow: 0 0 0 1px #e2e8f0 inset !important;
+  border-radius: 6px !important;
+}
+
+.el-input__wrapper:hover, .el-select__wrapper:hover {
+  box-shadow: 0 0 0 1px #94a3b8 inset !important;
+}
+
+.el-input__wrapper.is-focus, .el-select__wrapper.is-focus {
+  box-shadow: 0 0 0 1px var(--el-color-primary) inset, 0 0 0 3px var(--el-color-primary-light-8) !important;
+}
+
+/* Table Refinement */
+.el-table {
+  --el-table-header-bg-color: #f8fafc;
+  --el-table-row-hover-bg-color: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.el-table th.el-table__cell {
+  font-weight: 600;
+  color: #475569;
+  font-size: 13px;
+}
+
+/* Menu Refinement */
+.el-menu {
+  border-right: none !important;
+}
+
+.el-menu-item {
+  border-radius: 6px;
+  margin: 4px 8px;
+  height: 44px !important;
+  line-height: 44px !important;
+  display: flex;
+  align-items: center;
+}
+
+.el-menu--collapse .el-menu-item {
+  margin: 4px 0;
+  justify-content: center;
+  padding: 0 !important;
+}
+
+.el-menu--collapse .el-menu-item .el-icon {
+  margin: 0;
+}
+
+.el-menu-item.is-active {
+  background-color: var(--el-color-primary-light-9) !important;
+  color: var(--el-color-primary) !important;
+  font-weight: 600;
+}
+
+/* Layout Specifics */
+.layout-container {
+  min-height: 100vh;
+}
+
+.sidebar-wrapper {
+  border-right: 1px solid #e2e8f0;
+  background-color: #ffffff;
+  z-index: 100;
+}
+
+.header-container {
+  background: rgba(255, 255, 255, 0.8) !important;
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+/* Page Transition */
+.page-fade-enter-active,
+.page-fade-leave-active {
+  transition: all 0.3s ease;
+}
+
+.page-fade-enter-from {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.page-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+/* NProgress Customization */
+#nprogress .bar {
+  background: var(--el-color-primary) !important;
+  height: 3px !important;
+}
+
+#nprogress .peg {
+  box-shadow: 0 0 10px var(--el-color-primary), 0 0 5px var(--el-color-primary) !important;
+}
+
+/* Utility Classes */
+.font-bold { font-weight: 700; }
+.text-primary { color: var(--el-color-primary); }
+.mt-4 { margin-top: 1rem; }
+.mb-4 { margin-bottom: 1rem; }
+.mr-2 { margin-right: 0.5rem; }
+.ml-2 { margin-left: 0.5rem; }
+.flex { display: flex; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.gap-2 { gap: 0.5rem; }
+.gap-4 { gap: 1rem; }

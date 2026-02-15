@@ -1,0 +1,169 @@
+/* Page Header Styles */
+.page-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.page-action-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header-info {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.page-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.page-subtitle {
+  margin: 0;
+  font-size: 13px;
+  color: #64748b;
+}
+
+/* Page Action Bar Styles */
+.action-bar {
+  padding: 12px 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.page-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* Common Container Styles */
+.page-container {
+  padding: 0;
+  background-color: #fff;
+  min-width: 800px;
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow-y: hidden; /* 隐藏垂直滚动，配合.page-main-scroll做特定区域滚动 */
+}
+
+.main-content {
+  background-color: #ffffff;
+  border-radius: 0;
+  box-shadow: none;
+  margin-top: 0;
+  overflow: hidden;
+  width: 100%;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 页面主内容区域：负责内部滚动 */
+.page-main-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 内部不应被压缩的行（如统计行、固定的操作行） */
+.flex-fixed {
+  flex-shrink: 0;
+}
+
+/* 内部自动撑开的容器 */
+.flex-auto {
+  flex: 1;
+  overflow: hidden;
+}
+
+/* --- Common UI Component Styles --- */
+
+/* 标准表格卡片容器 */
+.table-card.el-card {
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  display: flex;
+  flex-direction: column;
+}
+
+.table-card > .el-card__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+}
+
+/* 检索过滤栏 */
+.filter-container {
+  padding: 16px 20px;
+  background-color: #fff;
+  border-bottom: 1px solid #f1f5f9;
+  flex-shrink: 0;
+}
+
+/* 分页栏 */
+.pagination-container {
+  padding: 16px 20px;
+  display: flex;
+  justify-content: flex-end;
+  background-color: #fff;
+  border-top: 1px solid #f1f5f9;
+  flex-shrink: 0;
+}
+
+/* 标准表格样式补丁 */
+.custom-table.el-table {
+  width: 100%;
+  border-radius: 0;
+  flex: 1;
+}
+
+/* 搜索表单项间距优化 */
+.search-form.el-form--inline .el-form-item {
+  margin-bottom: 0;
+  margin-right: 16px;
+}
+
+/* 通用对话框样式优化 */
+.custom-dialog.el-dialog {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.custom-dialog .el-dialog__header {
+  margin-right: 0;
+  padding: 20px 24px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.custom-dialog .el-dialog__title {
+  font-weight: 600;
+  font-size: 18px;
+}
+
+.custom-dialog .el-dialog__body {
+  padding: 24px;
+}
+
+.custom-dialog .el-dialog__footer {
+  padding: 16px 24px;
+  border-top: 1px solid #f1f5f9;
+}
