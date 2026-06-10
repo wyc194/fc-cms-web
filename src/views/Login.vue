@@ -225,7 +225,7 @@ const handleLogin = async () => {
 
 const handleForgotPassword = () => {
   ElMessageBox.alert(
-    '请联系系统管理员或发送邮件至 admin@freecity.com 重置您的密码。',
+    '请联系系统管理员或发送邮件至 admin@freecity.club 重置您的密码。',
     '找回密码',
     {
       confirmButtonText: '知道了',

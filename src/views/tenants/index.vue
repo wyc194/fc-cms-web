@@ -126,9 +126,9 @@
         <el-form-item label="博客名称" prop="name">
           <el-input v-model="form.name" placeholder="请输入博客名称" />
         </el-form-item>
-        <el-form-item label="二级域名" prop="domain">
+        <el-form-item label="二级域名" prop="domain" disabled >
           <el-input v-model="form.domain" placeholder="请输入二级域名">
-            <template #append>.freecity.com</template>
+            <template #append>.freecity.club</template>
           </el-input>
         </el-form-item>
         <el-row :gutter="20">
@@ -210,7 +210,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { packageApi } from '@/api/package'
 import { tenantApi } from '@/api/tenant'
 import type { Tenant, Package } from '@/api/types'
@@ -329,6 +329,13 @@ const form = reactive({
   status: 'ACTIVE' as const
 })
 
+// 自动同步租户编码到二级域名
+watch(() => form.code, (newCode) => {
+  if (dialogType.value === 'add') {
+    form.domain = newCode
+  }
+})
+
 const handleAdd = () => {
   dialogType.value = 'add'
   Object.assign(form, {
@@ -345,7 +352,12 @@ const handleAdd = () => {
 
 const handleEdit = (row: Tenant) => {
   dialogType.value = 'edit'
-  Object.assign(form, row)
+  const editForm = { ...row }
+  // 如果 domain 是完整域名，提取 subdomain 部分显示在输入框中
+  if (editForm.domain && editForm.domain.endsWith('.freecity.club')) {
+    editForm.domain = editForm.domain.replace('.freecity.club', '')
+  }
+  Object.assign(form, editForm)
   dialogVisible.value = true
 }
 
@@ -439,10 +451,6 @@ const tenantRules = reactive<FormRules>({
   name: [
     { required: true, message: '请输入博客名称', trigger: 'blur' },
     { min: 2, max: 30, message: '长度在 2 到 30 个字符', trigger: 'blur' }
-  ],
-  domain: [
-    { required: true, message: '请输入二级域名', trigger: 'blur' },
-    { pattern: /^[a-z0-9-]+$/, message: '域名仅支持小写字母、数字和连字符', trigger: 'blur' }
   ],
   packageId: [
     { required: true, message: '请选择套餐', trigger: 'change' }
