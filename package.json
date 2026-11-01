@@ -30,6 +30,7 @@
     "@types/node": "^25.0.9",
     "@vitejs/plugin-vue": "^6.0.4",
     "@vue/tsconfig": "^0.8.1",
+    "esbuild": "^0.28.2",
     "rollup-plugin-visualizer": "^6.0.5",
     "sass": "^1.97.2",
     "terser": "^5.46.0",

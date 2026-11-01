@@ -34,9 +34,13 @@ declare module 'axios' {
   }
 }
 
+// 默认超时 5s；文件上传等大请求在请求拦截器中单独放宽到 10s
+const DEFAULT_TIMEOUT = 5000
+const UPLOAD_TIMEOUT = 10000
+
 const service = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
-  timeout: 5000
+  timeout: DEFAULT_TIMEOUT
 })
 
 // 并发请求计数，用于 NProgress 进度条管理
@@ -61,8 +65,8 @@ function stopLoading() {
 let isRelogging = false
 // 标记是否正在刷新 token
 let isRefreshing = false
-// 存储因 token 过期导致失败的请求队列
-let requestsQueue: any[] = []
+// 存储因 token 过期导致失败的请求（类型化：刷新成功放行 / 失败拒绝，避免悬挂）
+let requestsQueue: { resolve: (token: string) => void; reject: (err: any) => void; config: any }[] = []
 
 /**
  * 递归将对象中的空字符串转换为 null
@@ -103,6 +107,10 @@ function convertEmptyStringsToNull(obj: any): any {
 service.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     startLoading()
+    // FormData（文件上传）放宽超时
+    if (config.data instanceof FormData) {
+      config.timeout = UPLOAD_TIMEOUT
+    }
     // 从 localStorage 获取租户 ID
     const tenantId = localStorage.getItem('tenantId')
     if (tenantId) {
@@ -208,7 +216,7 @@ async function handleTokenExpired(config: any) {
         userStore.setTokens(newAccessToken, newRefreshToken)
         
         // 刷新成功，重新执行队列中的请求
-        requestsQueue.forEach((cb) => cb(newAccessToken))
+        requestsQueue.forEach(({ resolve }) => resolve(newAccessToken))
         requestsQueue = []
         
         // 重新执行当前请求
@@ -218,7 +226,10 @@ async function handleTokenExpired(config: any) {
         throw new Error(res.data?.message || 'Token 刷新失败')
       }
     } catch (err) {
-      // 刷新失败，强制退出
+      // 刷新失败：队列中等待的请求也要拒绝，避免调用方永久悬挂
+      requestsQueue.forEach(({ reject }) => reject(err))
+      requestsQueue = []
+      // 强制退出
       handleUnauthorized()
       return Promise.reject(err)
     } finally {
@@ -226,10 +237,14 @@ async function handleTokenExpired(config: any) {
     }
   } else {
     // 正在刷新中，将请求加入队列
-    return new Promise((resolve) => {
-      requestsQueue.push((token: string) => {
-        config.headers['Authorization'] = `Bearer ${token}`
-        resolve(service(config))
+    return new Promise((resolve, reject) => {
+      requestsQueue.push({
+        resolve: (token: string) => {
+          config.headers['Authorization'] = `Bearer ${token}`
+          resolve(service(config))
+        },
+        reject,
+        config
       })
     })
   }

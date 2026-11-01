@@ -127,6 +127,9 @@ export interface PageResult<T> {
   number: number
 }
 
+/** 路由守卫声明的合法角色字面量（仅用于 meta.role 的编译期拼写校验） */
+export type Role = 'SUPER_ADMIN' | 'TENANT_ADMIN' | 'EDITOR' | 'VIEWER'
+
 // 用户信息
 export interface User {
   id: number

@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import type { User } from '@/api/types'
+import axios from 'axios'
 
 export const useUserStore = defineStore('user', {
   state: () => ({
@@ -10,7 +11,7 @@ export const useUserStore = defineStore('user', {
   getters: {
     isLoggedIn: (state) => !!state.user,
     token: (state) => state.accessToken,
-    role: (state) => state.user?.role || 'viewer',
+    role: (state) => state.user?.role ?? 'VIEWER',
     isSuperAdmin: (state) => state.user?.role?.toUpperCase() === 'SUPER_ADMIN'
   },
   actions: {
@@ -25,6 +26,15 @@ export const useUserStore = defineStore('user', {
       localStorage.setItem('refresh_token', refreshToken)
     },
     logout() {
+      // 通知服务端撤销令牌（尽力而为：无论成败都清理本地状态）。
+      // 必须用原生 axios，避免走拦截器——携带已失效令牌会触发 401→刷新→登出 的循环
+      if (this.refreshToken) {
+        const refreshToken = this.refreshToken
+        const accessToken = this.accessToken
+        axios
+          .post('/api/auth/logout', { refreshToken }, { headers: { Authorization: `Bearer ${accessToken}` } })
+          .catch(() => {})
+      }
       this.user = null
       this.accessToken = ''
       this.refreshToken = ''
