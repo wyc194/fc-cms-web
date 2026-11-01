@@ -439,8 +439,6 @@ import type { Tenant, LinkItem } from '@/api/types'
 import draggable from 'vuedraggable'
 import Prism from 'prismjs'
 import 'prismjs/themes/prism.css'
-import 'prismjs/components/prism-css'
-import 'prismjs/components/prism-javascript'
 
 const activeTab = ref('basic')
 const loading = ref(false)
