@@ -21,6 +21,11 @@
         <el-icon><Box /></el-icon>
         <template #title>套餐管理</template>
       </el-menu-item>
+
+      <el-menu-item index="/monitor">
+        <el-icon><Monitor /></el-icon>
+        <template #title>系统监控</template>
+      </el-menu-item>
     </template>
 
     <template v-else>
@@ -72,7 +77,8 @@ import {
   ChatLineRound,
   Picture,
   User, 
-  Setting 
+  Setting,
+  Monitor
 } from '@element-plus/icons-vue'
 
 defineProps<{

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="page-container">
     <div class="page-action-header">
       <div class="header-info">
@@ -103,7 +103,7 @@
                   </el-radio-group>
                 </div>
                 <el-dropdown trigger="click" @command="handleSortCommand" class="ml-12">
-                  <el-button icon="Sort" size="medium" circle />
+                  <el-button icon="Sort" size="default" circle />
                   <template #dropdown>
                     <el-dropdown-menu>
                       <el-dropdown-item command="newest">按最新时间</el-dropdown-item>
@@ -124,7 +124,7 @@
                       type="primary" 
                       plain 
                       icon="RefreshLeft"
-                      size="medium"
+                      size="default"
                       @click="handleBatchRestore"
                     >
                       恢复
@@ -133,7 +133,7 @@
                       type="danger" 
                       plain 
                       icon="Delete"
-                      size="medium"
+                      size="default"
                       @click="handleBatchDelete"
                     >
                       {{ activeCategory === 'trash' ? '彻底删除' : '移至回收站' }}
@@ -141,13 +141,13 @@
                     <el-button 
                       v-if="activeCategory !== 'trash'"
                       icon="Download"
-                      size="medium"
+                      size="default"
                       @click="handleBatchDownload"
                     >
                       下载
                     </el-button>
                   </el-button-group>
-                  <el-button link size="medium" @click="selectedItems = []" class="ml-8">取消</el-button>
+                  <el-button link size="default" @click="selectedItems = []" class="ml-8">取消</el-button>
                 </div>
               </div>
             </div>
@@ -852,13 +852,43 @@ const handleBatchDelete = () => {
   })
 }
 
-const handleBatchDownload = () => {
+const handleBatchDownload = async () => {
   if (selectedItems.value.length === 0) return
-  ElMessage.success(`正在准备下载 ${selectedItems.value.length} 个文件...`)
-  selectedItems.value.forEach(id => {
-    const item = mediaItems.value.find(i => i.id === id)
-    if (item) handleDownload(item)
-  })
+  const items = selectedItems.value
+    .map(id => mediaItems.value.find(i => i.id === id))
+    .filter((item): item is MediaItem => Boolean(item))
+  if (items.length === 0) return
+
+  let success = 0
+  let failed = 0
+
+  for (const item of items) {
+    try {
+      // 通过 fetch 取回二进制再触发保存，避免浏览器拦截 <a download> 的跨目录连续下载
+      const response = await fetch(item.url)
+      if (!response.ok) throw new Error(`HTTP ${response.status}`)
+      const blob = await response.blob()
+      const objectUrl = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = objectUrl
+      link.download = item.name
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(objectUrl)
+      success++
+    } catch {
+      failed++
+    }
+    // 逐个间隔触发，降低被浏览器批量拦截的概率
+    await new Promise(resolve => setTimeout(resolve, 400))
+  }
+
+  if (failed === 0) {
+    ElMessage.success(`已下载 ${success} 个文件`)
+  } else {
+    ElMessage.warning(`下载完成：成功 ${success} 个，失败 ${failed} 个`)
+  }
 }
 
 const handleDownload = (item: MediaItem) => {

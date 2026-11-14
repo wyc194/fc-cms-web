@@ -67,7 +67,7 @@
                     :key="tag.id"
                     class="tag-item"
                     closable
-                    :type="getRandomTagType()"
+                    :type="getTagType(tag)"
                     effect="light"
                     @close="handleTagDelete(tag)"
                   >
@@ -259,10 +259,9 @@ const handleTagDelete = (tag: Tag) => {
   })
 }
 
-const getRandomTagType = () => {
-  const types = ['', 'success', 'info', 'warning', 'danger']
-  return types[Math.floor(Math.random() * types.length)] as any
-}
+const tagTypes = ['primary', 'success', 'info', 'warning', 'danger'] as const
+
+const getTagType = (tag: Tag) => tagTypes[Number(tag.id) % tagTypes.length]
 
 const handleEdit = (row: Category) => {
   isEdit.value = true

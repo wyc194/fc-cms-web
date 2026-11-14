@@ -29,7 +29,7 @@
             />
           </el-form-item>
           <el-form-item label="状态" class="search-item">
-            <el-select v-model="queryForm.status" placeholder="全部" clearable class="status-select">
+            <el-select v-model="queryForm.status" placeholder="全部" clearable class="status-select" style="width: 140px">
               <el-option label="待审核" :value="0" />
               <el-option label="已通过" :value="1" />
               <el-option label="已拒绝" :value="2" />

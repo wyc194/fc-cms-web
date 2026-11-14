@@ -50,13 +50,23 @@
         </div>
         
         <div class="header-right">
-          <el-tooltip content="通知" placement="bottom">
-            <el-button link class="header-icon-btn">
-              <el-badge :value="3" :max="99" is-dot>
-                <el-icon :size="20"><Bell /></el-icon>
-              </el-badge>
-            </el-button>
-          </el-tooltip>
+          <el-popover placement="bottom" :width="260" trigger="click" v-model:visible="notifyVisible">
+            <template #reference>
+              <el-button link class="header-icon-btn">
+                <el-badge v-if="pendingCommentCount > 0" :value="pendingCommentCount" :max="99">
+                  <el-icon :size="20"><Bell /></el-icon>
+                </el-badge>
+                <el-icon v-else :size="20"><Bell /></el-icon>
+              </el-button>
+            </template>
+            <div class="notify-panel">
+              <div v-if="pendingCommentCount > 0" class="notify-item" @click="goPendingComments">
+                <el-icon><ChatDotRound /></el-icon>
+                <span>有 {{ pendingCommentCount }} 条评论待审核</span>
+              </div>
+              <div v-else class="notify-empty">暂无待处理通知</div>
+            </div>
+          </el-popover>
           
           <el-divider direction="vertical" />
           
@@ -90,22 +100,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/store/user'
+import { dashboardApi } from '@/api/dashboard'
 import SidebarMenu from './components/SidebarMenu.vue'
 import { useResponsive } from '@/composables/useResponsive'
 import { 
-  OfficeBuilding, 
-  Box, 
-  Document, 
-  CollectionTag, 
-  Picture,
-  User, 
-  Setting,
   Expand,
   Fold,
   Bell,
+  ChatDotRound,
   ArrowDown
 } from '@element-plus/icons-vue'
 
@@ -115,6 +120,36 @@ const userStore = useUserStore()
 const { isMobile } = useResponsive()
 const isCollapse = ref(false)
 const mobileMenuVisible = ref(false)
+const notifyVisible = ref(false)
+const pendingCommentCount = ref(0)
+
+// 顶栏通知：真实数据来源于 Dashboard 统计接口中的待审核评论数
+// 仅 EDITOR 及以上角色可访问该统计接口，VIEWER 不请求，避免触发 403 提示
+const canViewNotifications = computed(() =>
+  ['SUPER_ADMIN', 'TENANT_ADMIN', 'EDITOR'].includes((userStore.role || '').toUpperCase())
+)
+
+const loadNotifications = async () => {
+  if (!canViewNotifications.value) {
+    return
+  }
+  try {
+    const stats = await dashboardApi.getStats()
+    pendingCommentCount.value = stats.pendingCommentCount || 0
+  } catch {
+    // 通知属于非关键信息，失败时保持静默（徽标显示为空）
+    pendingCommentCount.value = 0
+  }
+}
+
+const goPendingComments = () => {
+  notifyVisible.value = false
+  router.push('/comments')
+}
+
+onMounted(() => {
+  loadNotifications()
+})
 
 // 监听移动端状态，如果是移动端则强制不折叠 PC 侧边栏
 watch(isMobile, (val) => {
@@ -123,11 +158,12 @@ watch(isMobile, (val) => {
   }
 })
 
-// 路由变化时自动关闭移动端菜单
+// 路由变化时自动关闭移动端菜单，并刷新待办通知数
 watch(() => route.path, () => {
   if (isMobile.value) {
     mobileMenuVisible.value = false
   }
+  loadNotifications()
 })
 
 const activeMenu = computed(() => route.path)
@@ -290,6 +326,33 @@ const handleCommand = (command: string) => {
 
 .logout-text {
   color: var(--el-color-danger);
+}
+
+.notify-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+.notify-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #475569;
+}
+
+.notify-item:hover {
+  background-color: #f8fafc;
+}
+
+.notify-empty {
+  padding: 8px;
+  text-align: center;
+  font-size: 13px;
+  color: #94a3b8;
 }
 
 /* 页面切换动画 */

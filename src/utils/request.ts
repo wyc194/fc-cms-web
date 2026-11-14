@@ -36,7 +36,7 @@ declare module 'axios' {
 
 // 默认超时 5s；文件上传等大请求在请求拦截器中单独放宽到 10s
 const DEFAULT_TIMEOUT = 5000
-const UPLOAD_TIMEOUT = 10000
+const UPLOAD_TIMEOUT = 15000
 
 const service = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
@@ -167,7 +167,11 @@ service.interceptors.response.use(
       }
       
       if (status === 403) {
-        const msg = error.response.data?.message || '权限不足，无法访问'
+        // 后端业务拒绝返回 { code, message }；CORS 等前置拦截返回纯文本（如 "Invalid CORS request"）
+        const data = error.response.data
+        const msg = (typeof data === 'string' && data.trim())
+          ? `请求被拒绝（HTTP 403）：${data.trim()}`
+          : (data?.message || '请求被拒绝（HTTP 403），请联系管理员确认原因')
         ElMessage.error(msg)
         return Promise.reject(new Error(msg))
       }

@@ -58,7 +58,7 @@
           </el-table-column>
           <el-table-column prop="domain" label="域名" min-width="200">
             <template #default="{ row }">
-              <el-link type="primary" :underline="false">{{ row.domain }}</el-link>
+              <el-link type="primary" underline="never">{{ row.domain }}</el-link>
             </template>
           </el-table-column>
           <el-table-column prop="packageId" label="套餐类型" width="120">
@@ -217,6 +217,7 @@ import type { Tenant, Package } from '@/api/types'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { Plus, Search, Monitor, Box, Timer, Check, DocumentCopy } from '@element-plus/icons-vue'
+import { countExpiredTenants, countTenantsWithDomain } from '@/utils/dashboard'
 
 // 获取默认租户编码
 const DEFAULT_TENANT_CODE = import.meta.env.VITE_DEFAULT_TENANT_CODE || 'admin'
@@ -273,8 +274,8 @@ onMounted(() => {
 const stats = computed(() => [
   { label: '总租户数', value: tenants.value.length, icon: Box, type: 'primary' },
   { label: '运行中', value: tenants.value.filter(t => t.status === 'ACTIVE').length, icon: Check, type: 'success' },
-  { label: '已到期', value: 0, icon: Timer, type: 'warning' },
-  { label: '活跃域名', value: tenants.value.length, icon: Monitor, type: 'info' }
+  { label: '已到期', value: countExpiredTenants(tenants.value), icon: Timer, type: 'warning' },
+  { label: '活跃域名', value: countTenantsWithDomain(tenants.value), icon: Monitor, type: 'info' }
 ])
 
 const filteredTenants = computed(() => {

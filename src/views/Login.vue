@@ -50,7 +50,7 @@
             
             <div class="login-options">
               <el-checkbox v-model="rememberMe">记住我</el-checkbox>
-              <el-link type="primary" :underline="false" @click="handleForgotPassword">忘记密码？</el-link>
+              <el-link type="primary" underline="never" @click="handleForgotPassword">忘记密码？</el-link>
             </div>
 
             <el-button 
@@ -72,7 +72,7 @@
           </transition>
 
           <div class="login-footer">
-            <p>还没有账号？ <el-link type="primary" :underline="false" @click="handleApplyTenant">立即申请租户</el-link></p>
+            <p>还没有账号？ <el-link type="primary" underline="never" @click="handleApplyTenant">立即申请租户</el-link></p>
           </div>
 
           <div class="login-tips" v-if="!lockoutRemaining">

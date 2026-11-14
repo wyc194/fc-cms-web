@@ -75,13 +75,6 @@
                 </el-icon>
               </div>
             </div>
-            <div class="stat-footer">
-              <span class="trend" :class="item.trend > 0 ? 'up' : 'down'">
-                <el-icon><component :is="item.trend > 0 ? 'CaretTop' : 'CaretBottom'" /></el-icon>
-                {{ Math.abs(item.trend) }}%
-              </span>
-              <span class="footer-text">较上月同期</span>
-            </div>
           </el-card>
         </el-col>
       </el-row>
@@ -98,7 +91,7 @@
                 <el-button link type="primary" @click="handleViewAll">查看全部</el-button>
               </div>
             </template>
-            <el-table :data="recentData" style="width: 100%" class="recent-table" v-loading="loading">
+            <el-table :data="recentData" style="width: 100%" class="recent-table" v-loading="listLoading">
               <template v-if="userStore.isSuperAdmin">
                 <el-table-column prop="name" label="租户名称" min-width="150">
                   <template #default="{ row }">
@@ -165,65 +158,68 @@
               </div>
             </el-card>
 
-            <el-card shadow="never" class="status-card" v-if="userStore.isSuperAdmin">
+            <el-card shadow="never" class="status-card" v-if="userStore.isSuperAdmin" v-loading="metricsLoading">
               <template #header>
                 <div class="card-header">
                   <div class="header-title">
                     <el-icon><Monitor /></el-icon>
                     <span>系统状态</span>
                   </div>
-                  <el-tag type="success" size="small" effect="dark">运行中</el-tag>
+                  <el-button link type="primary" @click="router.push('/monitor')">详情</el-button>
                 </div>
               </template>
               <div class="system-status">
                 <div class="status-item">
                   <div class="status-label">
                     <span>CPU 使用率</span>
-                    <span class="status-value">{{ systemStats.cpu }}%</span>
+                    <span class="status-value">{{ cpuAvailable ? systemMetrics.cpuUsage + '%' : '不可用' }}</span>
                   </div>
-                  <el-progress :percentage="systemStats.cpu" :stroke-width="8" :show-text="false" />
+                  <el-progress
+                    v-if="cpuAvailable"
+                    :percentage="Math.min(100, Math.max(0, systemMetrics.cpuUsage || 0))"
+                    :stroke-width="8"
+                    :show-text="false"
+                  />
                 </div>
                 <div class="status-item">
                   <div class="status-label">
                     <span>内存 使用率</span>
-                    <span class="status-value">{{ systemStats.memory }}%</span>
+                    <span class="status-value">{{ physicalPercent }}%</span>
                   </div>
-                  <el-progress :percentage="systemStats.memory" :stroke-width="8" color="#e6a23c" :show-text="false" />
+                  <el-progress :percentage="physicalPercent" :stroke-width="8" color="#e6a23c" :show-text="false" />
                 </div>
                 <div class="status-item">
                   <div class="status-label">
                     <span>存储 占用</span>
-                    <span class="status-value">{{ systemStats.storage }}%</span>
+                    <span class="status-value">{{ diskPercent }}%</span>
                   </div>
-                  <el-progress :percentage="systemStats.storage" :stroke-width="8" color="#67c23a" :show-text="false" />
+                  <el-progress :percentage="diskPercent" :stroke-width="8" color="#67c23a" :show-text="false" />
                 </div>
               </div>
             </el-card>
 
-            <el-card shadow="never" class="todo-card flex-auto" v-else>
+            <el-card shadow="never" class="todo-card flex-auto">
               <template #header>
                 <div class="card-header">
                   <div class="header-title">
                     <el-icon><Bell /></el-icon>
                     <span>待办事项</span>
                   </div>
-                  <el-badge :value="3" class="item" type="danger" />
+                  <el-badge v-if="todoTotal > 0" :value="todoTotal" :max="99" class="item" type="danger" />
                 </div>
               </template>
-              <div class="todo-list">
-                <div class="todo-item">
-                  <el-checkbox>审核 2 篇待发布文章</el-checkbox>
-                  <span class="todo-time">10:30</span>
-                </div>
-                <div class="todo-item">
-                  <el-checkbox>更新 5 月份专题封面</el-checkbox>
-                  <span class="todo-time">14:00</span>
-                </div>
-                <div class="todo-item">
-                  <el-checkbox>回复 12 条用户评论</el-checkbox>
-                  <span class="todo-time">16:45</span>
+              <div class="todo-list" v-if="todoItems.length">
+                <div
+                  v-for="item in todoItems"
+                  :key="item.key"
+                  class="todo-item"
+                  @click="router.push(item.to)"
+                >
+                  <span class="todo-label">{{ item.label }}</span>
+                  <el-icon class="todo-arrow"><ArrowRight /></el-icon>
                 </div>
               </div>
+              <el-empty v-else description="暂无待办事项" :image-size="60" />
             </el-card>
           </div>
         </el-col>
@@ -240,6 +236,8 @@ import { useResponsive } from '@/composables/useResponsive'
 import { dashboardApi, type DashboardStats } from '@/api/dashboard'
 import { articleApi } from '@/api/article'
 import { tenantApi } from '@/api/tenant'
+import { systemApi, type SystemMetrics } from '@/api/system'
+import { buildTodoItems } from '@/utils/dashboard'
 import { ElMessage } from 'element-plus'
 import { 
   OfficeBuilding, 
@@ -247,8 +245,6 @@ import {
   Document, 
   View, 
   Edit, 
-  CaretTop,
-  CaretBottom,
   List, 
   Pointer,
   EditPen,
@@ -262,13 +258,19 @@ import {
   Collection,
   QuestionFilled,
   MagicStick,
-  Close
+  Close,
+  ArrowRight,
+  UserFilled
 } from '@element-plus/icons-vue'
 
 const userStore = useUserStore()
 const router = useRouter()
 const { isMobile } = useResponsive()
-const loading = ref(false)
+const statsLoading = ref(false)
+const listLoading = ref(false)
+const metricsLoading = ref(false)
+// 刷新按钮反映任一数据源仍在加载
+const loading = computed(() => statsLoading.value || listLoading.value || metricsLoading.value)
 const showGuide = ref(localStorage.getItem('dashboard_guide_dismissed') !== 'true')
 
 const dismissGuide = () => {
@@ -278,18 +280,16 @@ const dismissGuide = () => {
 const stats = ref<DashboardStats>({})
 const recentArticles = ref<any[]>([])
 const recentTenants = ref<any[]>([])
-
-const systemStats = ref({
-  cpu: 15,
-  memory: 42,
-  storage: 28
+const allTenants = ref<any[]>([])
+/** 真实服务器指标（仅超级管理员加载） */
+const systemMetrics = ref<Partial<SystemMetrics>>({})
+const cpuAvailable = computed(() => (systemMetrics.value.cpuUsage ?? -1) >= 0)
+const physicalPercent = computed(() => {
+  const total = systemMetrics.value.physicalTotalMb || 0
+  const used = systemMetrics.value.physicalUsedMb || 0
+  return total > 0 ? Math.round((used * 100) / total) : 0
 })
-
-// 模拟系统状态动态更新
-const updateSystemStats = () => {
-  systemStats.value.cpu = Math.floor(Math.random() * 20) + 10
-  systemStats.value.memory = Math.floor(Math.random() * 10) + 40
-}
+const diskPercent = computed(() => Math.min(100, Math.round(systemMetrics.value.diskUsagePercent || 0)))
 
 const getGreeting = computed(() => {
   const hour = new Date().getHours()
@@ -308,30 +308,38 @@ interface StatisticItem {
   unit?: string
   icon: any
   color: string
-  trend: number
 }
 
 const statistics = computed<StatisticItem[]>(() => {
   if (userStore.isSuperAdmin) {
     return [
-      { title: '总租户数', count: stats.value.tenantCount || 0, icon: OfficeBuilding, color: 'primary', trend: 12 },
-      { title: '活跃租户', count: stats.value.activeTenantCount || 0, icon: User, color: 'success', trend: 8 },
-      { title: '套餐种类', count: stats.value.packageCount || 0, icon: Box, color: 'warning', trend: 0 },
-      { title: '平台文章', count: stats.value.totalPlatformArticleCount || 0, icon: Collection, color: 'info', trend: 15 }
+      { title: '总租户数', count: stats.value.tenantCount || 0, icon: OfficeBuilding, color: 'primary' },
+      { title: '活跃租户', count: stats.value.activeTenantCount || 0, icon: User, color: 'success' },
+      { title: '套餐种类', count: stats.value.packageCount || 0, icon: Box, color: 'warning' },
+      { title: '平台文章', count: stats.value.totalPlatformArticleCount || 0, icon: Collection, color: 'info' }
     ]
   } else {
     return [
-      { title: '文章总数', count: stats.value.articleCount || 0, icon: Document, color: 'primary', trend: 24 },
-      { title: '已发布', count: stats.value.publishedCount || 0, icon: Edit, color: 'success', trend: 18 },
-      { title: '草稿箱', count: stats.value.draftCount || 0, icon: EditPen, color: 'warning', trend: -5 },
-      { title: '今日浏览', count: stats.value.todayViewCount || 0, unit: '次', icon: View, color: 'info', trend: 32 }
+      { title: '文章总数', count: stats.value.articleCount || 0, icon: Document, color: 'primary' },
+      { title: '已发布', count: stats.value.publishedCount || 0, icon: Edit, color: 'success' },
+      { title: '草稿箱', count: stats.value.draftCount || 0, icon: EditPen, color: 'warning' },
+      { title: '总浏览', count: stats.value.totalViewCount || 0, unit: '次', icon: View, color: 'info' }
     ]
   }
 })
 
+/** 待办事项由真实数据推导（待审评论 / 草稿 / 租户到期），无数据时展示空状态 */
+const todoItems = computed(() => buildTodoItems({
+  isSuperAdmin: userStore.isSuperAdmin,
+  stats: stats.value,
+  tenants: allTenants.value
+}))
+const todoTotal = computed(() => todoItems.value.reduce((sum, item) => sum + item.count, 0))
+
 const recentData = computed(() => {
   if (userStore.isSuperAdmin) {
     return recentTenants.value.map(t => ({
+      id: t.id,
       name: t.name,
       domain: t.domain,
       status: t.status === 'ACTIVE' ? '正常' : '禁用',
@@ -340,6 +348,7 @@ const recentData = computed(() => {
     }))
   } else {
     return recentArticles.value.map(a => ({
+      id: a.id,
       title: a.title,
       author: a.authorName || '管理员',
       status: a.published ? '已发布' : '草稿',
@@ -349,22 +358,41 @@ const recentData = computed(() => {
 })
 
 const fetchData = async () => {
-  loading.value = true
+  statsLoading.value = true
   try {
-    const res = await dashboardApi.getStats()
-    stats.value = res
+    stats.value = await dashboardApi.getStats()
+  } catch (error) {
+    ElMessage.error('获取统计数据失败')
+  } finally {
+    statsLoading.value = false
+  }
 
-    if (userStore.isSuperAdmin) {
-      const tenantsRes = await tenantApi.getTenants()
-      recentTenants.value = tenantsRes.slice(0, 6)
-    } else {
+  // 列表与监控各自独立加载，单个失败不影响另一块展示
+  listLoading.value = true
+  if (userStore.isSuperAdmin) {
+    metricsLoading.value = true
+    const [tenantsRes, metricsRes] = await Promise.allSettled([
+      tenantApi.getTenants(),
+      systemApi.getMetrics()
+    ])
+    if (tenantsRes.status === 'fulfilled') {
+      allTenants.value = tenantsRes.value
+      recentTenants.value = tenantsRes.value.slice(0, 6)
+    }
+    if (metricsRes.status === 'fulfilled') {
+      systemMetrics.value = metricsRes.value
+    }
+    metricsLoading.value = false
+    listLoading.value = false
+  } else {
+    try {
       const articlesRes = await articleApi.getArticles({ page: 0, size: 6 })
       recentArticles.value = articlesRes.content || []
+    } catch {
+      // 最近文章属于非关键数据，失败时保持为空
+    } finally {
+      listLoading.value = false
     }
-  } catch (error) {
-    ElMessage.error('获取数据失败')
-  } finally {
-    loading.value = false
   }
 }
 
@@ -377,7 +405,8 @@ const availableActions = computed(() => {
     return [
       { label: '新增租户', type: 'new-tenant', icon: Plus, color: 'success' },
       { label: '套餐管理', type: 'packages', icon: Box, color: 'primary' },
-      { label: '系统监控', type: 'status', icon: Monitor, color: 'warning' }
+      { label: '系统监控', type: 'status', icon: Monitor, color: 'warning' },
+      { label: '成员管理', type: 'users', icon: UserFilled, color: 'info' }
     ]
   }
   
@@ -389,7 +418,6 @@ const availableActions = computed(() => {
 })
 
 const handleRefresh = () => {
-  updateSystemStats()
   fetchData()
 }
 
@@ -402,7 +430,11 @@ const handleViewAll = () => {
 }
 
 const handleRowClick = (row: any) => {
-  ElMessage.info(`查看详情: ${row.name || row.title}`)
+  if (userStore.isSuperAdmin) {
+    router.push('/tenants')
+  } else if (row.id) {
+    router.push(`/articles/edit/${row.id}`)
+  }
 }
 
 const handleAction = (type: string) => {
@@ -411,17 +443,22 @@ const handleAction = (type: string) => {
       router.push('/articles/edit/new')
       break
     case 'new-tenant':
+      router.push('/tenants')
+      break
     case 'packages':
-      router.push(type === 'new-tenant' ? '/tenants' : '/packages')
+      router.push('/packages')
+      break
+    case 'users':
+      router.push('/users')
+      break
+    case 'status':
+      router.push('/monitor')
       break
     case 'settings':
       router.push('/settings')
       break
     case 'media':
       router.push('/media')
-      break
-    case 'status':
-      ElMessage.info('系统监控功能开发中...')
       break
   }
 }
@@ -629,11 +666,6 @@ const handleAction = (type: string) => {
     font-size: 18px;
   }
   
-  .stat-footer {
-    font-size: 11px;
-    margin-top: 8px;
-  }
-  
   .page-title {
     font-size: 18px;
   }
@@ -641,22 +673,6 @@ const handleAction = (type: string) => {
   .page-subtitle {
     font-size: 12px;
   }
-}
-
-.trend {
-  display: flex;
-  align-items: center;
-  font-size: 13px;
-  font-weight: 600;
-  gap: 2px;
-}
-
-.trend.up { color: #22c55e; }
-.trend.down { color: #ef4444; }
-
-.footer-text {
-  font-size: 12px;
-  color: #94a3b8;
 }
 
 .card-header {
@@ -780,6 +796,7 @@ const handleAction = (type: string) => {
   align-items: center;
   padding: 8px;
   border-radius: 6px;
+  cursor: pointer;
   transition: background-color 0.2s;
 }
 
@@ -787,7 +804,12 @@ const handleAction = (type: string) => {
   background-color: #f8fafc;
 }
 
-.todo-time {
+.todo-label {
+  font-size: 13px;
+  color: #475569;
+}
+
+.todo-arrow {
   font-size: 12px;
   color: #94a3b8;
 }

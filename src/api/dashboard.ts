@@ -5,13 +5,17 @@ export interface DashboardStats {
   articleCount?: number
   publishedCount?: number
   draftCount?: number
-  todayViewCount?: number
+  totalViewCount?: number
 
   // Super Admin Stats
   tenantCount?: number
   activeTenantCount?: number
   packageCount?: number
   totalPlatformArticleCount?: number
+
+  // 通用：待办与通知数据源
+  pendingCommentCount?: number
+  expiredTenantCount?: number
 }
 
 export const dashboardApi = {

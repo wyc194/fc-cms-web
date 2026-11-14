@@ -43,6 +43,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '套餐管理', role: 'SUPER_ADMIN' }
       },
       {
+        path: 'monitor',
+        name: 'Monitor',
+        component: () => import('@/views/monitor/index.vue'),
+        meta: { title: '系统监控', role: 'SUPER_ADMIN' }
+      },
+      {
         path: 'articles',
         name: 'Articles',
         component: () => import('@/views/articles/index.vue'),
